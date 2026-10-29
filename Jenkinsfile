@@ -59,7 +59,7 @@ pipeline {
                                       --context `pwd`/back-end \
                                       --dockerfile `pwd`/back-end/Dockerfile \
                                       --destination harbor.local/library/back-end:${BUILD_ID} \
-                                      --registry-certificate /certs/ca.crt \
+                                      --registry-certificate harbor.local=/certs/ca.crt \
                                       --cache=true
                                     '''
                                 }
@@ -94,7 +94,7 @@ pipeline {
                                       --context `pwd`/front-end \
                                       --dockerfile `pwd`/front-end/Dockerfile \
                                       --destination harbor.local/library/front-end:${BUILD_ID} \
-                                      --registry-certificate /certs/ca.crt \
+                                      --registry-certificate harbor.local=/certs/ca.crt \
                                       --cache=true
                                     '''
                                 }
