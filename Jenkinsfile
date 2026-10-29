@@ -16,7 +16,8 @@ spec:
     - name: kaniko-secret
       mountPath: /kaniko/.docker
     - name: ca-cert
-      mountPath: /kaniko/ssl/certs/additional-ca-cert-bundle.crt
+      mountPath: /certs/ca.crt
+      subPath: additional-ca-cert-bundle.crt
   volumes:
   - name: kaniko-secret
     secret:
@@ -58,6 +59,7 @@ pipeline {
                                       --context `pwd`/back-end \
                                       --dockerfile `pwd`/back-end/Dockerfile \
                                       --destination harbor.local/library/back-end:${BUILD_ID} \
+                                      --registry-certificate /certs/ca.crt \
                                       --cache=true
                                     '''
                                 }
@@ -92,6 +94,7 @@ pipeline {
                                       --context `pwd`/front-end \
                                       --dockerfile `pwd`/front-end/Dockerfile \
                                       --destination harbor.local/library/front-end:${BUILD_ID} \
+                                      --registry-certificate /certs/ca.crt \
                                       --cache=true
                                     '''
                                 }
