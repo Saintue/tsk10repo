@@ -3,6 +3,10 @@ apiVersion: v1
 kind: Pod
 spec:
   serviceAccountName: jenkins
+  hostAliases:
+  - ip: "192.168.0.100"
+    hostnames:
+    - "harbor.local"
   containers:
   - name: kaniko
     image: ghcr.io/osscontainertools/kaniko:debug
@@ -53,7 +57,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/back-end \
                                       --dockerfile `pwd`/back-end/Dockerfile \
-                                      --destination harbor-core.harbor.svc.cluster.local/library/back-end:${BUILD_ID} \
+                                      --destination harbor.local/library/back-end:${BUILD_ID} \
                                       --cache=true
                                     '''
                                 }
@@ -87,7 +91,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/front-end \
                                       --dockerfile `pwd`/front-end/Dockerfile \
-                                      --destination harbor-core.harbor.svc.cluster.local/library/front-end:${BUILD_ID} \
+                                      --destination harbor.local/library/front-end:${BUILD_ID} \
                                       --cache=true
                                     '''
                                 }
