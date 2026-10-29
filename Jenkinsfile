@@ -58,7 +58,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/back-end \
                                       --dockerfile `pwd`/back-end/Dockerfile \
-                                      --destination harbor.local/library/back-end:${BUILD_ID} \
+                                      --destination harbor.local/java-app/back-end:${BUILD_ID} \
                                       --registry-certificate harbor.local=/certs/ca.crt \
                                       --cache=true
                                     '''
@@ -93,7 +93,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/front-end \
                                       --dockerfile `pwd`/front-end/Dockerfile \
-                                      --destination harbor.local/library/front-end:${BUILD_ID} \
+                                      --destination harbor.local/java-app/front-end:${BUILD_ID} \
                                       --registry-certificate harbor.local=/certs/ca.crt \
                                       --cache=true
                                     '''
