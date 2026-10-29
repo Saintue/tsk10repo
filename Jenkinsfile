@@ -1,3 +1,29 @@
+def podYaml = '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  securityContext:
+    runAsUser: 1000
+  containers:
+  - name: kaniko
+    image: ghcr.io/osscontainertools/kaniko:debug
+    command: ['/busybox/cat']
+    tty: true
+    volumeMounts:
+    - name: kaniko-secret
+      mountPath: /kaniko/.docker
+    - name: ca-cert
+      mountPath: /kaniko/ssl/certs/additional-ca-cert-bundle.crt
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: harbor-push-secret
+  - name: ca-cert
+    secret:
+      secretName: harbor-ca-cert
+'''
+
 pipeline {
     agent none
 
@@ -7,7 +33,7 @@ pipeline {
                 stage('Back-end') {
                     agent {
                         kubernetes {
-                            inheritFrom 'kaniko-builder'
+                            yaml podYaml
                             defaultContainer 'jnlp'
                         }
                     }
@@ -41,7 +67,7 @@ pipeline {
                 stage('Front-end') {
                     agent {
                         kubernetes {
-                            inheritFrom 'kaniko-builder'
+                            yaml podYaml
                             defaultContainer 'jnlp'
                         }
                     }
