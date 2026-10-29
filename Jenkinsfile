@@ -53,7 +53,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/back-end \
                                       --dockerfile `pwd`/back-end/Dockerfile \
-                                      --destination harbor.local/library/back-end:${BUILD_ID} \
+                                      --destination harbor-core.harbor.svc.cluster.local/library/back-end:${BUILD_ID} \
                                       --cache=true
                                     '''
                                 }
@@ -87,7 +87,7 @@ pipeline {
                                     /kaniko/executor \
                                       --context `pwd`/front-end \
                                       --dockerfile `pwd`/front-end/Dockerfile \
-                                      --destination harbor.local/library/front-end:${BUILD_ID} \
+                                      --destination harbor-core.harbor.svc.cluster.local/library/front-end:${BUILD_ID} \
                                       --cache=true
                                     '''
                                 }
