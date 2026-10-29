@@ -22,6 +22,9 @@ spec:
   - name: kaniko-secret
     secret:
       secretName: harbor-push-secret
+      items:
+      - key: .dockerconfigjson
+        path: config.json
   - name: ca-cert
     secret:
       secretName: harbor-ca-cert
