@@ -1,0 +1,29 @@
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis
+  tag: "8.2.1-debian-12-r0"
+  pullPolicy: IfNotPresent
+
+global:
+  security:
+    allowInsecureImages: true
+
+auth:
+  enabled: false
+
+master:
+  podLabels:
+    app: redis
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+replica:
+  replicaCount: 0
