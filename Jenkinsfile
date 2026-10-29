@@ -3,8 +3,6 @@ apiVersion: v1
 kind: Pod
 spec:
   serviceAccountName: jenkins
-  securityContext:
-    runAsUser: 1000
   containers:
   - name: kaniko
     image: ghcr.io/osscontainertools/kaniko:debug
