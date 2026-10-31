@@ -1,19 +1,38 @@
 def utils
+def podYamlContent
 
 pipeline {
     agent none
 
     stages {
-        stage('Load Utils') {
+        stage('Prepare') {
             agent {
                 kubernetes {
-                    yaml readFile('ci/kaniko-pod.yaml')
+                    yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
+    command: ['/busybox/cat']
+    tty: true
+'''
                     defaultContainer 'jnlp'
                 }
             }
             steps {
                 script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
+                    ])
+                    
+                    podYamlContent = readFile('ci/kaniko-pod.yaml')
                     utils = load 'ci/ci-utils.groovy'
+                    
+                    stash name: 'source-code', includes: 'back-end/, front-end/, ci/'
                 }
             }
         }
@@ -23,64 +42,31 @@ pipeline {
                 stage('Back-end') {
                     agent {
                         kubernetes {
-                            yaml readFile('ci/kaniko-pod.yaml')
+                            yaml podYamlContent
                             defaultContainer 'jnlp'
                         }
                     }
-                    stages {
-                        stage('Checkout Back-end') {
-                            steps {
-                                checkout([$class: 'GitSCM',
-                                    branches: [[name: '*/main']],
-                                    extensions: [[$class: 'SparseCheckoutPaths',
-                                                  sparseCheckoutPaths: [
-                                                      [$class: 'SparseCheckoutPath', path: 'back-end/'],
-                                                      [$class: 'SparseCheckoutPath', path: 'ci/']
-                                                  ]]],
-                                    userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
-                                ])
-                            }
-                        }
-                        stage('Build & Push Back-end') {
-                            steps {
-                                container('kaniko') {
-                                    script {
-                                        utils.buildAndPush('back-end', 'back-end')
-                                    }
-                                }
+                    steps {
+                        unstash 'source-code'
+                        container('kaniko') {
+                            script {
+                                utils.buildAndPush('back-end', 'back-end')
                             }
                         }
                     }
                 }
-
                 stage('Front-end') {
                     agent {
                         kubernetes {
-                            yaml readFile('ci/kaniko-pod.yaml')
+                            yaml podYamlContent
                             defaultContainer 'jnlp'
                         }
                     }
-                    stages {
-                        stage('Checkout Front-end') {
-                            steps {
-                                checkout([$class: 'GitSCM',
-                                    branches: [[name: '*/main']],
-                                    extensions: [[$class: 'SparseCheckoutPaths',
-                                                  sparseCheckoutPaths: [
-                                                      [$class: 'SparseCheckoutPath', path: 'front-end/'],
-                                                      [$class: 'SparseCheckoutPath', path: 'ci/']
-                                                  ]]],
-                                    userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
-                                ])
-                            }
-                        }
-                        stage('Build & Push Front-end') {
-                            steps {
-                                container('kaniko') {
-                                    script {
-                                        utils.buildAndPush('front-end', 'front-end')
-                                    }
-                                }
+                    steps {
+                        unstash 'source-code'
+                        container('kaniko') {
+                            script {
+                                utils.buildAndPush('front-end', 'front-end')
                             }
                         }
                     }
