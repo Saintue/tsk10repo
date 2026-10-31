@@ -1,0 +1,102 @@
+replicaCount: 1
+
+image:
+  repository: frontend
+  tag: "2.0.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: harbor-push-secret
+
+nginxConf: |
+  worker_processes auto;
+  error_log /var/log/nginx/error.log;
+
+  events {
+      worker_connections 768;
+  }
+
+  http {
+      sendfile on;
+      tcp_nopush on;
+      types_hash_max_size 2048;
+      server_tokens off;
+
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+
+      access_log /var/log/nginx/access.log;
+      gzip on;
+
+      server {
+          listen 80;
+          root /var/www/html;
+          index index.html;
+
+          location / {
+              expires -1;
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /static/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+          }
+
+          location /api/ {
+              proxy_pass http://backend-backend-chart:8081/api/;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+
+          location /manage/health {
+              proxy_pass http://backend-backend-chart:8081/manage/health;
+              proxy_set_header X-Real-IP $remote_addr;
+          }
+
+          location /manage/prometheus {
+              proxy_pass http://backend-backend-chart:8081/manage/prometheus;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+  }
+
+volumeMounts:
+  - name: nginx-config
+    mountPath: /etc/nginx/nginx.conf
+    subPath: nginx.conf
+    readOnly: true
+
+probes:
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 20
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - NET_RAW
+      - MKNOD
+      - SYS_CHROOT
+
+podLabels:
+  app: frontend

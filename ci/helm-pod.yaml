@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: helm
+    image: alpine/helm:4.3.1
+    command: ['cat']
+    tty: true

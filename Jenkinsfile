@@ -2,6 +2,7 @@ def utils
 def buildPodYaml
 def lintBackendPodYaml
 def lintFrontendPodYaml
+def helmPodYaml
 
 pipeline {
     agent none
@@ -33,9 +34,10 @@ spec:
                     buildPodYaml = readFile('ci/kaniko-pod.yaml')
                     lintBackendPodYaml = readFile('ci/lint-backend-pod.yaml')
                     lintFrontendPodYaml = readFile('ci/lint-frontend-pod.yaml')
+                    helmPodYaml = readFile('ci/helm-pod.yaml')
                     utils = load 'ci/ci-utils.groovy'
 
-                    stash name: 'source-code', includes: 'back-end/, front-end/, ci/'
+                    stash name: 'source-code', includes: 'back-end/, front-end/, ci/, charts/'
                 }
             }
         }
@@ -105,6 +107,43 @@ spec:
                         container('kaniko') {
                             script {
                                 utils.buildAndPush('front-end', 'front-end')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Applications') {
+            parallel {
+                stage('Deploy Back-end') {
+                    agent {
+                        kubernetes {
+                            yaml helmPodYaml
+                            defaultContainer 'jnlp'
+                        }
+                    }
+                    steps {
+                        unstash 'source-code'
+                        container('helm') {
+                            script {
+                                utils.deployHelm('backend')
+                            }
+                        }
+                    }
+                }
+                stage('Deploy Front-end') {
+                    agent {
+                        kubernetes {
+                            yaml helmPodYaml
+                            defaultContainer 'jnlp'
+                        }
+                    }
+                    steps {
+                        unstash 'source-code'
+                        container('helm') {
+                            script {
+                                utils.deployHelm('frontend')
                             }
                         }
                     }
