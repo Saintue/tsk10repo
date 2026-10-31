@@ -13,7 +13,6 @@ def deployHelm(String appName) {
     sh """
     helm upgrade --install ${appName} ./charts/${appName}-chart \
       --namespace app \
-      --create-namespace \
       --rollback-on-failure \
       --timeout 5m \
       --set image.repository="harbor.local/java-app/${appName}" \
