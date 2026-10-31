@@ -127,7 +127,7 @@ spec:
                         unstash 'source-code'
                         container('helm') {
                             script {
-                                utils.deployHelm('backend')
+                                utils.deployHelm('back-end')
                             }
                         }
                     }
@@ -143,7 +143,7 @@ spec:
                         unstash 'source-code'
                         container('helm') {
                             script {
-                                utils.deployHelm('frontend')
+                                utils.deployHelm('front-end')
                             }
                         }
                     }
