@@ -1,45 +1,23 @@
-def podYaml = '''
-apiVersion: v1
-kind: Pod
-spec:
-  serviceAccountName: jenkins
-  hostAliases:
-  - ip: "192.168.0.100"
-    hostnames:
-    - "harbor.local"
-  containers:
-  - name: kaniko
-    image: ghcr.io/osscontainertools/kaniko:debug
-    command: ['/busybox/cat']
-    tty: true
-    volumeMounts:
-    - name: kaniko-secret
-      mountPath: /kaniko/.docker
-    - name: ca-cert
-      mountPath: /certs/ca.crt
-      subPath: additional-ca-cert-bundle.crt
-  volumes:
-  - name: kaniko-secret
-    secret:
-      secretName: harbor-push-secret
-      items:
-      - key: .dockerconfigjson
-        path: config.json
-  - name: ca-cert
-    secret:
-      secretName: harbor-ca-cert
-'''
+def utils
 
 pipeline {
     agent none
 
     stages {
+        stage('Load Utils') {
+            steps {
+                script {
+                    utils = load 'ci/ci-utils.groovy'
+                }
+            }
+        }
+
         stage('Build Applications') {
             parallel {
                 stage('Back-end') {
                     agent {
                         kubernetes {
-                            yaml podYaml
+                            yaml readFile('ci/kaniko-pod.yaml')
                             defaultContainer 'jnlp'
                         }
                     }
@@ -49,7 +27,10 @@ pipeline {
                                 checkout([$class: 'GitSCM',
                                     branches: [[name: '*/main']],
                                     extensions: [[$class: 'SparseCheckoutPaths',
-                                                  sparseCheckoutPaths: [[$class: 'SparseCheckoutPath', path: 'back-end/']]]],
+                                                  sparseCheckoutPaths: [
+                                                      [$class: 'SparseCheckoutPath', path: 'back-end/'],
+                                                      [$class: 'SparseCheckoutPath', path: 'ci/']
+                                                  ]]],
                                     userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
                                 ])
                             }
@@ -57,14 +38,9 @@ pipeline {
                         stage('Build & Push Back-end') {
                             steps {
                                 container('kaniko') {
-                                    sh '''
-                                    /kaniko/executor \
-                                      --context `pwd`/back-end \
-                                      --dockerfile `pwd`/back-end/Dockerfile \
-                                      --destination harbor.local/java-app/back-end:${BUILD_ID} \
-                                      --registry-certificate harbor.local=/certs/ca.crt \
-                                      --cache=true
-                                    '''
+                                    script {
+                                        utils.buildAndPush('back-end', 'back-end')
+                                    }
                                 }
                             }
                         }
@@ -74,7 +50,7 @@ pipeline {
                 stage('Front-end') {
                     agent {
                         kubernetes {
-                            yaml podYaml
+                            yaml readFile('ci/kaniko-pod.yaml')
                             defaultContainer 'jnlp'
                         }
                     }
@@ -84,7 +60,10 @@ pipeline {
                                 checkout([$class: 'GitSCM',
                                     branches: [[name: '*/main']],
                                     extensions: [[$class: 'SparseCheckoutPaths',
-                                                  sparseCheckoutPaths: [[$class: 'SparseCheckoutPath', path: 'front-end/']]]],
+                                                  sparseCheckoutPaths: [
+                                                      [$class: 'SparseCheckoutPath', path: 'front-end/'],
+                                                      [$class: 'SparseCheckoutPath', path: 'ci/']
+                                                  ]]],
                                     userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
                                 ])
                             }
@@ -92,14 +71,9 @@ pipeline {
                         stage('Build & Push Front-end') {
                             steps {
                                 container('kaniko') {
-                                    sh '''
-                                    /kaniko/executor \
-                                      --context `pwd`/front-end \
-                                      --dockerfile `pwd`/front-end/Dockerfile \
-                                      --destination harbor.local/java-app/front-end:${BUILD_ID} \
-                                      --registry-certificate harbor.local=/certs/ca.crt \
-                                      --cache=true
-                                    '''
+                                    script {
+                                        utils.buildAndPush('front-end', 'front-end')
+                                    }
                                 }
                             }
                         }
