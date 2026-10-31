@@ -5,6 +5,12 @@ pipeline {
 
     stages {
         stage('Load Utils') {
+            agent {
+                kubernetes {
+                    yaml readFile('ci/kaniko-pod.yaml')
+                    defaultContainer 'jnlp'
+                }
+            }
             steps {
                 script {
                     utils = load 'ci/ci-utils.groovy'
