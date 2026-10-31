@@ -11,7 +11,7 @@ def buildAndPush(String appDir, String imageName) {
 
 def deployHelm(String appName, String chartName) {
     sh """
-    helm upgrade --install ${appName} ./charts/${chartName}-chart \
+    helm upgrade --install ${chartName} ./charts/${chartName}-chart \
       --namespace app \
       --rollback-on-failure \
       --timeout 5m \
