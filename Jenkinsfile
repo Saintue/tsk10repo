@@ -1,5 +1,7 @@
 def utils
-def podYamlContent
+def buildPodYaml
+def lintBackendPodYaml
+def lintFrontendPodYaml
 
 pipeline {
     agent none
@@ -27,11 +29,48 @@ spec:
                         branches: [[name: '*/main']],
                         userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
                     ])
-                    
-                    podYamlContent = readFile('ci/kaniko-pod.yaml')
+
+                    buildPodYaml = readFile('ci/kaniko-pod.yaml')
+                    lintBackendPodYaml = readFile('ci/lint-backend-pod.yaml')
+                    lintFrontendPodYaml = readFile('ci/lint-frontend-pod.yaml')
                     utils = load 'ci/ci-utils.groovy'
-                    
+
                     stash name: 'source-code', includes: 'back-end/, front-end/, ci/'
+                }
+            }
+        }
+
+        stage('Lint Applications') {
+            parallel {
+                stage('Lint Back-end') {
+                    agent {
+                        kubernetes {
+                            yaml lintBackendPodYaml
+                            defaultContainer 'jnlp'
+                        }
+                    }
+                    steps {
+                        unstash 'source-code'
+                        container('gradle-lint') {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                sh 'cd back-end && gradle checkstyleMain --no-daemon'
+                            }
+                        }
+                    }
+                }
+                stage('Lint Front-end') {
+                    agent {
+                        kubernetes {
+                            yaml lintFrontendPodYaml
+                            defaultContainer 'jnlp'
+                        }
+                    }
+                    steps {
+                        unstash 'source-code'
+                        container('node-lint') {
+                            sh 'cd front-end && npm ci && npm run lint'
+                        }
+                    }
                 }
             }
         }
@@ -41,7 +80,7 @@ spec:
                 stage('Back-end') {
                     agent {
                         kubernetes {
-                            yaml podYamlContent
+                            yaml buildPodYaml
                             defaultContainer 'jnlp'
                         }
                     }
@@ -57,7 +96,7 @@ spec:
                 stage('Front-end') {
                     agent {
                         kubernetes {
-                            yaml podYamlContent
+                            yaml buildPodYaml
                             defaultContainer 'jnlp'
                         }
                     }

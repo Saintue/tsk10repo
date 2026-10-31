@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: node-lint
+    image: node:22-alpine
+    command: ['cat']
+    tty: true
