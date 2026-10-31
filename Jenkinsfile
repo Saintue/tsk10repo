@@ -15,8 +15,7 @@ spec:
   serviceAccountName: jenkins
   containers:
   - name: jnlp
-    image: jenkins/inbound-agent:latest
-    command: ['/busybox/cat']
+    image: jenkins/inbound-agent:3391.va_37fa_a_305d6d-1-jdk25
     tty: true
 '''
                     defaultContainer 'jnlp'
