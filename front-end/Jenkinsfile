@@ -1,0 +1,92 @@
+def utils
+def buildPodYaml
+def lintFrontendPodYaml
+def helmPodYaml
+
+pipeline {
+    agent none
+
+    stages {
+        stage('Prepare') {
+            agent {
+                kubernetes {
+                    yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: jnlp
+    image: jenkins/inbound-agent:3391.va_37fa_a_305d6d-1-jdk25
+    tty: true
+'''
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
+                    ])
+
+                    buildPodYaml = readFile('ci/kaniko-pod.yaml')
+                    lintFrontendPodYaml = readFile('ci/lint-frontend-pod.yaml')
+                    helmPodYaml = readFile('ci/helm-pod.yaml')
+                    utils = load 'ci/ci-utils.groovy'
+
+                    stash name: 'source-code-fe', includes: 'front-end/, ci/, charts/'
+                }
+            }
+        }
+
+        stage('Lint Front-end') {
+            agent {
+                kubernetes {
+                    yaml lintFrontendPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-fe'
+                container('node-lint') {
+                    sh 'cd front-end && npm ci && npm run lint'
+                }
+            }
+        }
+
+        stage('Build Front-end') {
+            agent {
+                kubernetes {
+                    yaml buildPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-fe'
+                container('kaniko') {
+                    script {
+                        utils.buildAndPush('front-end', 'front-end')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Front-end') {
+            agent {
+                kubernetes {
+                    yaml helmPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-fe'
+                container('helm') {
+                    script {
+                        utils.deployHelm('front-end', 'frontend')
+                    }
+                }
+            }
+        }
+    }
+}

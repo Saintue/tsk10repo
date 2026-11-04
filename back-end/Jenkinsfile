@@ -1,0 +1,94 @@
+def utils
+def buildPodYaml
+def lintBackendPodYaml
+def helmPodYaml
+
+pipeline {
+    agent none
+
+    stages {
+        stage('Prepare') {
+            agent {
+                kubernetes {
+                    yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: jnlp
+    image: jenkins/inbound-agent:3391.va_37fa_a_305d6d-1-jdk25
+    tty: true
+'''
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/Saintue/tsk10repo.git']]
+                    ])
+
+                    buildPodYaml = readFile('ci/kaniko-pod.yaml')
+                    lintBackendPodYaml = readFile('ci/lint-backend-pod.yaml')
+                    helmPodYaml = readFile('ci/helm-pod.yaml')
+                    utils = load 'ci/ci-utils.groovy'
+
+                    stash name: 'source-code-be', includes: 'back-end/, ci/, charts/'
+                }
+            }
+        }
+
+        stage('Lint Back-end') {
+            agent {
+                kubernetes {
+                    yaml lintBackendPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-be'
+                container('gradle-lint') {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'cd back-end && gradle checkstyleMain --no-daemon'
+                    }
+                }
+            }
+        }
+
+        stage('Build Back-end') {
+            agent {
+                kubernetes {
+                    yaml buildPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-be'
+                container('kaniko') {
+                    script {
+                        utils.buildAndPush('back-end', 'back-end')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Back-end') {
+            agent {
+                kubernetes {
+                    yaml helmPodYaml
+                    defaultContainer 'jnlp'
+                }
+            }
+            steps {
+                unstash 'source-code-be'
+                container('helm') {
+                    script {
+                        utils.deployHelm('back-end', 'backend')
+                    }
+                }
+            }
+        }
+    }
+}
