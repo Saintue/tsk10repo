@@ -41,6 +41,9 @@ spec:
         }
 
         stage('Lint Back-end') {
+            when { 
+                changeset "back-end/**" 
+            }
             agent {
                 kubernetes {
                     yaml lintBackendPodYaml
@@ -58,6 +61,9 @@ spec:
         }
 
         stage('Build Back-end') {
+            when { 
+                changeset "back-end/**" 
+            }
             agent {
                 kubernetes {
                     yaml buildPodYaml
@@ -75,6 +81,9 @@ spec:
         }
 
         stage('Deploy Back-end') {
+            when { 
+                changeset "back-end/**" 
+            }
             agent {
                 kubernetes {
                     yaml helmPodYaml
