@@ -23,7 +23,6 @@ spec:
     image: jenkins/inbound-agent:3391.va_37fa_a_305d6d-1-jdk25
     tty: true
 '''
-                    defaultContainer 'jnlp'
                 }
             }
             steps {
@@ -51,7 +50,6 @@ spec:
             agent {
                 kubernetes {
                     yaml lintBackendPodYaml
-                    defaultContainer 'jnlp'
                 }
             }
             steps {
@@ -72,7 +70,6 @@ spec:
             agent {
                 kubernetes {
                     yaml buildPodYaml
-                    defaultContainer 'jnlp'
                 }
             }
             steps {
@@ -93,7 +90,6 @@ spec:
             agent {
                 kubernetes {
                     yaml helmPodYaml
-                    defaultContainer 'jnlp'
                 }
             }
             steps {
