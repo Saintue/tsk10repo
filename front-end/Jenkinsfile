@@ -8,6 +8,10 @@ pipeline {
 
     stages {
         stage('Prepare') {
+            when {
+                beforeAgent true
+                changeset "front-end/**"
+            }
             agent {
                 kubernetes {
                     yaml '''
@@ -41,8 +45,9 @@ spec:
         }
 
         stage('Lint Front-end') {
-            when { 
-                changeset "front-end/**" 
+            when {
+                beforeAgent true
+                changeset "front-end/**"
             }
             agent {
                 kubernetes {
@@ -59,8 +64,9 @@ spec:
         }
 
         stage('Build Front-end') {
-            when { 
-                changeset "front-end/**" 
+            when {
+                beforeAgent true
+                changeset "front-end/**"
             }
             agent {
                 kubernetes {
@@ -79,8 +85,9 @@ spec:
         }
 
         stage('Deploy Front-end') {
-            when { 
-                changeset "front-end/**" 
+            when {
+                beforeAgent true
+                changeset "front-end/**"
             }
             agent {
                 kubernetes {
