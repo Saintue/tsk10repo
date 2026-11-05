@@ -1,7 +1,6 @@
 def buildAndPush(String appDir, String imageName) {
-    // Берем полный хэш из Jenkins и оставляем первые 7 символов
     def shortSha = env.GIT_COMMIT.take(7) 
-    
+
     sh """
     /kaniko/executor \
       --context ./${appDir} \

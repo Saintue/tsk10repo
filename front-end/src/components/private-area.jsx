@@ -63,7 +63,7 @@ const PrivateArea = () => {
                     <Col xs={2}>
                         <Link to="/create-post">
                             <Button variant="primary">
-                                very important update 12)
+                                very important update for jenkins)
                             </Button>
                         </Link>
                     </Col>
